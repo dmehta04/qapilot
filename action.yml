@@ -1,0 +1,39 @@
+name: QAPilot
+description: AI-powered multi-layer QA pipeline for any stack
+author: QAPilot
+
+inputs:
+  mode:
+    description: 'Pipeline mode: fast, full, or pre-release'
+    required: false
+    default: 'full'
+  config:
+    description: 'Path to .qapilot.yml config file'
+    required: false
+    default: ''
+  anthropic-api-key:
+    description: 'Anthropic API key for AI features'
+    required: false
+    default: ''
+  slack-webhook:
+    description: 'Slack webhook URL for notifications'
+    required: false
+    default: ''
+
+outputs:
+  status:
+    description: 'Pipeline result: pass, fail, or warn'
+  passed:
+    description: 'Number of layers that passed'
+  failed:
+    description: 'Number of layers that failed'
+  duration:
+    description: 'Total pipeline duration in milliseconds'
+
+runs:
+  using: node20
+  main: dist/github-action/main.js
+
+branding:
+  icon: check-circle
+  color: blue

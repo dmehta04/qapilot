@@ -1,0 +1,97 @@
+version: "1"
+stack: nextjs
+mode: full
+
+layers:
+  skip:
+    - L15
+  warnOnly:
+    - L13
+    - L14
+  overrides:
+    L1:
+      command: "pnpm eslint src/"
+      enabled: true
+      timeout: 60000
+    L2:
+      command: "pnpm tsc --noEmit"
+      enabled: true
+    L3:
+      command: "pnpm vitest run"
+      enabled: true
+      threshold:
+        coverage: 80
+        minTests: 10
+    L4:
+      command: "pnpm vitest run --project component"
+      enabled: true
+    L5:
+      command: "pnpm vitest run --project integration"
+      enabled: true
+    L6:
+      command: "pnpm vitest run --project contract"
+      enabled: true
+    L7:
+      command: "curl -sf http://localhost:3000/api/health"
+      enabled: true
+      timeout: 30000
+      endpoints:
+        - "/api/health"
+        - "/api/status"
+      baseUrl: "http://localhost:3000"
+    L8:
+      command: "pnpm audit --audit-level=high"
+      enabled: true
+    L9:
+      command: "pnpm playwright test"
+      enabled: true
+      timeout: 900000
+    L10:
+      command: "pnpm playwright test --project=visual"
+      enabled: true
+    L11:
+      command: "pnpm playwright test --project=chromium --project=firefox"
+      enabled: true
+    L12:
+      command: "pnpm playwright test --project=mobile-chrome"
+      enabled: true
+    L13:
+      command: "pnpm lighthouse ci"
+      warnOnly: true
+    L14:
+      command: "pnpm axe-core src/"
+      warnOnly: true
+    L16:
+      command: "pnpm custom-check"
+      enabled: true
+
+ai:
+  enabled: true
+  model: "claude-sonnet-4-20250514"
+  provider: anthropic
+  maxTokens: 4096
+  temperature: 0.2
+
+notifications:
+  slack:
+    enabled: true
+    channel: "#qa-results"
+    webhookUrl: "https://hooks.slack.com/services/T00/B00/XXX"
+  github:
+    enabled: true
+    commentOnPr: true
+    statusCheck: true
+
+reports:
+  format: html
+  outputDir: ".qapilot"
+  upload:
+    enabled: false
+    bucket: "my-bucket"
+    prefix: "reports/"
+
+build:
+  command: "pnpm build"
+  preBuild: "pnpm install --frozen-lockfile"
+  env:
+    NODE_ENV: "production"

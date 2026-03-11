@@ -1,0 +1,14 @@
+version: "1"
+stack: nextjs
+mode: full
+
+layers:
+  skip:
+    - L8
+    - L10
+    - L11
+    - L16
+  overrides:
+    L8:
+      enabled: false
+      reason: "Using Snyk"

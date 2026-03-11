@@ -1,0 +1,12 @@
+version: "1"
+stack: nextjs
+mode: fast
+
+layers:
+  overrides:
+    L1:
+      command: "npx biome check ."
+    L3:
+      command: "npx jest --ci --coverage"
+    L9:
+      command: "npx cypress run"
