@@ -13007,26 +13007,48 @@ async function detectStack(cwd) {
 }
 
 // src/cli/commands/init.ts
-function buildDefaultConfig(detected) {
+function readScripts(cwd) {
+  const pkgPath = (0, import_node_path14.join)(cwd, "package.json");
+  if (!(0, import_node_fs2.existsSync)(pkgPath)) return {};
+  try {
+    const pkg = JSON.parse((0, import_node_fs2.readFileSync)(pkgPath, "utf-8"));
+    return pkg.scripts ?? {};
+  } catch {
+    return {};
+  }
+}
+function buildDefaultConfig(detected, cwd) {
+  const scripts = readScripts(cwd);
+  const pm = detected.packageManager;
+  const skip = [];
+  const hasLint = !!scripts["lint"];
+  const hasTest = !!scripts["test"] || !!scripts["test:run"];
+  const hasBuild = !!scripts["build"];
+  const hasTypecheck = !!scripts["typecheck"];
+  if (!hasTest) {
+    skip.push("L3");
+    skip.push("L4");
+  }
   const config = {
     version: "1",
     stack: detected.stack,
     mode: "fast",
     layers: {
-      overrides: {
-        L1: { command: `${detected.packageManager} run lint`, enabled: true },
-        L3: { command: detected.testCommand, enabled: true },
-        L7: { command: `${detected.packageManager} run build`, enabled: true }
-      }
+      skip: skip.length > 0 ? skip : void 0,
+      overrides: {}
     },
     ai: { enabled: true, provider: "anthropic" }
   };
-  if (detected.hasTypeScript) {
+  if (hasLint) config.layers.overrides["L1"] = { command: `${pm} run lint`, enabled: true };
+  if (hasTest) config.layers.overrides["L3"] = { command: detected.testCommand, enabled: true };
+  if (hasBuild) config.layers.overrides["L7"] = { command: `${pm} run build`, enabled: true };
+  if (hasTypecheck || detected.hasTypeScript) {
     config.layers.overrides["L2"] = {
-      command: `${detected.packageManager} run typecheck || npx tsc --noEmit`,
+      command: hasTypecheck ? `${pm} run typecheck` : "npx tsc --noEmit",
       enabled: true
     };
   }
+  config.layers.overrides["L8"] = { command: `${pm} audit --audit-level=high`, warnOnly: true };
   return config;
 }
 function registerInitCommand(program3) {
@@ -13049,7 +13071,7 @@ function registerInitCommand(program3) {
     console.log(`  ${source_default.dim("Linter:")}       ${detected.linter}`);
     console.log(`  ${source_default.dim("TypeScript:")}   ${detected.hasTypeScript ? "yes" : "no"}`);
     console.log("");
-    const config = buildDefaultConfig(detected);
+    const config = buildDefaultConfig(detected, cwd);
     const content = jsYaml.dump(config, { indent: 2, lineWidth: 120 });
     const outPath = (0, import_node_path14.join)(cwd, ".qapilot.yml");
     (0, import_node_fs2.writeFileSync)(outPath, content, "utf-8");

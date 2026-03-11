@@ -1,33 +1,60 @@
 import type { Command } from 'commander';
-import { writeFileSync } from 'node:fs';
+import { writeFileSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import yaml from 'js-yaml';
 import chalk from 'chalk';
 import { detectStack } from '../../detector/index.js';
 import type { DetectedStack } from '../../detector/types.js';
-import type { QAPilotConfig } from '../../config/types.js';
+import type { QAPilotConfig, LayerID } from '../../config/types.js';
 
-function buildDefaultConfig(detected: DetectedStack): QAPilotConfig {
+function readScripts(cwd: string): Record<string, string> {
+  const pkgPath = join(cwd, 'package.json');
+  if (!existsSync(pkgPath)) return {};
+  try {
+    const pkg = JSON.parse(readFileSync(pkgPath, 'utf-8'));
+    return pkg.scripts ?? {};
+  } catch {
+    return {};
+  }
+}
+
+function buildDefaultConfig(detected: DetectedStack, cwd: string): QAPilotConfig {
+  const scripts = readScripts(cwd);
+  const pm = detected.packageManager;
+  const skip: LayerID[] = [];
+
+  const hasLint = !!scripts['lint'];
+  const hasTest = !!scripts['test'] || !!scripts['test:run'];
+  const hasBuild = !!scripts['build'];
+  const hasTypecheck = !!scripts['typecheck'];
+
+  if (!hasTest) {
+    skip.push('L3');
+    skip.push('L4');
+  }
+
   const config: QAPilotConfig = {
     version: '1',
     stack: detected.stack,
     mode: 'fast',
     layers: {
-      overrides: {
-        L1: { command: `${detected.packageManager} run lint`, enabled: true },
-        L3: { command: detected.testCommand, enabled: true },
-        L7: { command: `${detected.packageManager} run build`, enabled: true },
-      },
+      skip: skip.length > 0 ? skip : undefined,
+      overrides: {},
     },
     ai: { enabled: true, provider: 'anthropic' },
   };
 
-  if (detected.hasTypeScript) {
+  if (hasLint) config.layers!.overrides!['L1'] = { command: `${pm} run lint`, enabled: true };
+  if (hasTest) config.layers!.overrides!['L3'] = { command: detected.testCommand, enabled: true };
+  if (hasBuild) config.layers!.overrides!['L7'] = { command: `${pm} run build`, enabled: true };
+  if (hasTypecheck || detected.hasTypeScript) {
     config.layers!.overrides!['L2'] = {
-      command: `${detected.packageManager} run typecheck || npx tsc --noEmit`,
+      command: hasTypecheck ? `${pm} run typecheck` : 'npx tsc --noEmit',
       enabled: true,
     };
   }
+
+  config.layers!.overrides!['L8'] = { command: `${pm} audit --audit-level=high`, warnOnly: true };
 
   return config;
 }
@@ -56,7 +83,7 @@ export function registerInitCommand(program: Command) {
       console.log(`  ${chalk.dim('TypeScript:')}   ${detected.hasTypeScript ? 'yes' : 'no'}`);
       console.log('');
 
-      const config = buildDefaultConfig(detected);
+      const config = buildDefaultConfig(detected, cwd);
       const content = yaml.dump(config, { indent: 2, lineWidth: 120 });
       const outPath = join(cwd, '.qapilot.yml');
 
