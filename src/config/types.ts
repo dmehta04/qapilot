@@ -49,6 +49,7 @@ export const STACK_TYPES = [
   'java',
   'go',
   'dotnet',
+  'nodejs',
 ] as const;
 
 export type StackType = (typeof STACK_TYPES)[number];

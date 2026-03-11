@@ -172,6 +172,23 @@ const dotnetDefaults: StackDefaults = {
   L14: 'dotnet test --filter "Category=Accessibility"',
 };
 
+const nodejsDefaults: StackDefaults = {
+  L1: 'npx eslint .',
+  L2: 'npx tsc --noEmit',
+  L3: 'npx vitest run',
+  L4: 'npx vitest run --project component',
+  L5: 'npx vitest run --project integration',
+  L6: 'npx vitest run --project contract',
+  L7: 'curl -sf http://localhost:3000/health',
+  L8: 'npm audit --audit-level=high',
+  L9: 'npx playwright test',
+  L10: 'npx playwright test --project=visual',
+  L11: 'npx playwright test --project=chromium --project=firefox --project=webkit',
+  L12: 'npx playwright test --project=mobile-chrome --project=mobile-safari',
+  L13: 'npx autocannon -c 10 -d 10 http://localhost:3000',
+  L14: 'npx axe-core .',
+};
+
 export const STACK_DEFAULTS: Record<StackType, StackDefaults> = {
   nextjs: nextjsDefaults,
   react: reactDefaults,
@@ -183,6 +200,7 @@ export const STACK_DEFAULTS: Record<StackType, StackDefaults> = {
   java: javaDefaults,
   go: goDefaults,
   dotnet: dotnetDefaults,
+  nodejs: nodejsDefaults,
 };
 
 export const DEFAULT_LAYER_TIMEOUTS: Partial<Record<LayerID, number>> = {

@@ -38,7 +38,14 @@ export function registerInitCommand(program: Command) {
     .description('Initialize QAPilot configuration')
     .action(async () => {
       const cwd = process.cwd();
-      const detected = await detectStack(cwd);
+      let detected: DetectedStack;
+      try {
+        detected = await detectStack(cwd);
+      } catch (err) {
+        console.log(chalk.yellow(`\n  ⚠ No supported stack detected in ${cwd}`));
+        console.log(chalk.dim('  This may be a docs-only or unsupported project. Skipping.\n'));
+        return;
+      }
 
       console.log(chalk.bold('\n  Detected Stack\n'));
       console.log(`  ${chalk.dim('Project:')}      ${detected.projectName}`);

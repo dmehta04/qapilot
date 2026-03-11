@@ -1,11 +1,16 @@
 import type { StackType } from '../config/types.js';
 
 export type PackageManager =
-  | 'pnpm' | 'npm' | 'yarn' | 'bun'
-  | 'pip' | 'uv'
+  | 'pnpm'
+  | 'npm'
+  | 'yarn'
+  | 'bun'
+  | 'pip'
+  | 'uv'
   | 'cargo'
   | 'pub'
-  | 'maven' | 'gradle'
+  | 'maven'
+  | 'gradle'
   | 'go'
   | 'dotnet';
 
@@ -19,4 +24,6 @@ export interface DetectedStack {
   testCommand: string;
   hasTypeScript: boolean;
   projectName: string;
+  isMonorepo?: boolean;
+  subprojects?: Array<{ path: string; stack: DetectedStack }>;
 }
